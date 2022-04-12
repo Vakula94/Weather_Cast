@@ -1,8 +1,60 @@
 import 'package:flutter/material.dart';
-import 'widgets/weather_tile.dart';
+import 'widgets/main_widget.dart';
+import 'package:http/http.dart' as http;
+import 'dart:async';
+import 'dart:convert';
+
+Future<WeatherInfo> fetchWeather() async {
+  final zipCode = "00802";
+  final apiKey = "cf63c06ed1722bf83abd93e917944896";
+  final requestUrl =
+      "https://api.openweathermap.org/data/2.5/weather?zip=${zipCode},vi&units=imperial&appid=${apiKey}";
+
+  final response = await http.get(Uri.parse(requestUrl));
+
+  if (response.statusCode == 200) {
+    return WeatherInfo.fromJson(jsonDecode(response.body));
+  } else {
+    throw Exception("Error Loading request URL info.");
+  }
+}
+
+class WeatherInfo {
+  final location;
+  final temp;
+  final tempMin;
+  final tempMax;
+  final weather;
+  final humidity;
+  final windSpeed;
+
+  WeatherInfo(
+      {required this.location,
+      required this.temp,
+      required this.tempMin,
+      required this.tempMax,
+      required this.weather,
+      required this.humidity,
+      required this.windSpeed});
+
+  factory WeatherInfo.fromJson(Map<String, dynamic> json) {
+    return WeatherInfo(
+      location: json['name'],
+      temp: json['main']['temp'],
+      tempMin: json['main']['temp_min'],
+      tempMax: json['main']['temp_max'],
+      weather: json['weather'][0]['description'],
+      humidity: json['main']['humidity'],
+      windSpeed: json['wind']['speed'],
+    );
+  }
+}
 
 void main() => runApp(MaterialApp(
-    debugShowCheckedModeBanner: false, title: 'Weather App', home: MyApp()));
+    debugShowCheckedModeBanner: false,
+    title: 'Weather App',
+    home: MyApp())
+);
 
 class MyApp extends StatefulWidget {
   @override
@@ -12,74 +64,39 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyApp extends State<MyApp> {
+  late Future<WeatherInfo> futureWeather;
+
+  @override
+  void initState() {
+    super.initState();
+    futureWeather = fetchWeather();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Column(
-        children: [
-          Container(
-            height: MediaQuery.of(context).size.height / 2,
-            width: MediaQuery.of(context).size.width,
-            decoration: BoxDecoration(
-              color: Color(0xffd7f7e2),
-              borderRadius: BorderRadius.only(
-                bottomLeft: Radius.circular(15.0),
-                bottomRight: Radius.circular(15.0),
-              ),
+      backgroundColor: Color(0xff1ff2dc),
+        body: FutureBuilder<WeatherInfo>(
+            future: futureWeather,
+            builder: (context, snapshot) {
+              if (snapshot.hasData) {
+                return MainWidget(
+                  location: snapshot.data?.location,
+                  temp: snapshot.data?.temp,
+                  tempMin: snapshot.data?.tempMin,
+                  tempMax: snapshot.data?.tempMax,
+                  weather: snapshot.data?.weather,
+                  humidity: snapshot.data?.humidity,
+                  windSpeed: snapshot.data?.windSpeed,
+                );
+              } else if (snapshot.hasError) {
+                return Center(
+                  child: Text("${snapshot.error}"),
+                );
+              }
+              return CircularProgressIndicator();
+            }
             ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  'Kyiv',
-                  style: TextStyle(fontSize: 30, fontWeight: FontWeight.w900),
-                ),
-                Padding(
-                  padding: EdgeInsets.only(top: 10, bottom: 10),
-                  child: Text(
-                    '11°',
-                    style: TextStyle(
-                        color: Color(0xff80aaff),
-                        fontSize: 40,
-                        fontWeight: FontWeight.w900),
-                  ),
-                ),
-                Text(
-                  'High of 15°, Low of 6°',
-                  style: TextStyle(
-                    color: Color(0xff80aaff),
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Expanded(
-            child: Padding(
-              padding: EdgeInsets.all(20),
-              child: ListView(
-                children: [
-                  WeatherTile(
-                      icon: Icons.thermostat_outlined,
-                      title: 'Temperature',
-                      subtitle: '10°'),
-                  WeatherTile(
-                      icon: Icons.filter_drama_outlined,
-                      title: 'Weather',
-                      subtitle: 'Cloudy'),
-                  WeatherTile(
-                      icon: Icons.wb_sunny, title: 'Humidity', subtitle: '5%'),
-                  WeatherTile(
-                      icon: Icons.waves_outlined,
-                      title: 'Wind Speed',
-                      subtitle: '7mph'),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

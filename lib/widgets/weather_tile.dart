@@ -23,11 +23,15 @@ class WeatherTile extends StatelessWidget {
       ),
       title: Text(
         title,
-        style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+        style: TextStyle(fontSize: 18,
+            fontWeight: FontWeight.w600,
+          fontFamily: 'Epilogue',
+        ),
       ),
       subtitle: Text(
         subtitle,
         style: TextStyle(
+          fontFamily: 'Epilogue',
           fontSize: 16,
           fontWeight: FontWeight.w600,
           color: Color(0xff0c5682),
